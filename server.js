@@ -1,12 +1,21 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const db = require('./db');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
 
 // ─── Customers ───────────────────────────────────────────────────────────────
 
@@ -132,6 +141,7 @@ app.post('/api/orders', (req, res) => {
     const itemRows = items.map(item => {
       const product = db.prepare(`SELECT * FROM products WHERE id=?`).get(item.product_id);
       if (!product) throw new Error(`Product ${item.product_id} not found`);
+      if (product.stock < item.quantity) throw new Error(`Insufficient stock for "${product.name}" (available: ${product.stock})`);
       total += product.price * item.quantity;
       return { product, quantity: item.quantity };
     });

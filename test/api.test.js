@@ -132,6 +132,16 @@ const tests = [
     console.log('✓ order reduces product stock');
   },
 
+  async function test_insufficient_stock() {
+    const { status, body } = await req('POST', '/api/orders', {
+      customer_id: customerId,
+      items: [{ product_id: productId, quantity: 9999 }],
+    });
+    assert.strictEqual(status, 400);
+    assert.ok(body.error.includes('Insufficient stock'));
+    console.log('✓ order rejected when stock is insufficient');
+  },
+
   async function test_get_order_detail() {
     const { status, body } = await req('GET', `/api/orders/${orderId}`);
     assert.strictEqual(status, 200);
